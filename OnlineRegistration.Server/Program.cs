@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using OnlineRegistration.Server.Data;
 using OnlineRegistration.Server.Models;
 using OnlineRegistration.Server.Services;
@@ -26,6 +27,35 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddDbContext<EmployeesDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "makatizen_app.Server", Version = "v1" });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. Enter your token in the text input below.",
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -34,7 +64,7 @@ builder.Services.AddSingleton<IEmailQueue, EmailBackgroundQueue>();
 builder.Services.AddHostedService<EmailSender>();
 
 // For password hashing
-builder.Services.AddScoped<IPasswordHasher<Users>, PasswordHasher<Users>>();
+builder.Services.AddScoped<IPasswordHasher<UsersEmployee>, PasswordHasher<UsersEmployee>>();
 
 // AFIS queue
 builder.Services.AddSingleton<AfisQueueService>(); // Service shared with controller
@@ -106,6 +136,7 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
 
 builder.Services.AddAuthorization();
 

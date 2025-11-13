@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Makatizen.AdminPortal.Models
+namespace OnlineRegistration.Server.Models
 {
     public class LoginRequest
     {
@@ -13,7 +13,6 @@ namespace Makatizen.AdminPortal.Models
 
     public class LoginResponse
     {
-        public bool Success { get; set; }
         public string Message { get; set; }
         public string Token { get; set; }
         public string UserRole { get; set; }

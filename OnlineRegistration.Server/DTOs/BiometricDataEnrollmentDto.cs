@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SeniorCitizen.Server.DTOs
+namespace OnlineRegistration.Server.DTOs
 {
     public class BiometricDataEnrollmentDto
     {

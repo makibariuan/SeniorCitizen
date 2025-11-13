@@ -1,4 +1,4 @@
-﻿namespace makatizen_app.Server.Models
+﻿namespace OnlineRegistration.Server.Models
 {
     // Define the interface that both UsersSystem and UsersKit must implement
     public interface IResettableUser

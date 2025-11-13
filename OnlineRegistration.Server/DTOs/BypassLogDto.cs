@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace makatizen_app.Server.DTOs
+namespace OnlineRegistration.Server.DTOs
 {
     public class BypassLogDto
     {

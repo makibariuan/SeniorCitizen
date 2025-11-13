@@ -1,4 +1,4 @@
-﻿using makatizen_app.Server.Models;
+﻿using OnlineRegistration.Server.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -29,7 +29,7 @@ public class BypassLog
     public string? ReasonDetails { get; set; }
 
     // DateBypassed (datetime, null)
-    public DateTime? DateBypassed { get; set; }\
+    public DateTime? DateBypassed { get; set; }
 
     //edit
 }

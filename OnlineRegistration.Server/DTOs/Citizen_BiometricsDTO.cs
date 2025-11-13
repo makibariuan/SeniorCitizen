@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System;
 
-namespace makatizen_app.Server.DTOs
+namespace OnlineRegistration.Server.DTOs
 {
     // --- Biometric Data DTO (Input) ---
     // Used inside CitizenCreateDto for enrolling new biometric data.

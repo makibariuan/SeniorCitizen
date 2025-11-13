@@ -1,4 +1,4 @@
-﻿namespace makatizen_app.Server.Models
+﻿namespace OnlineRegistration.Server.Models
 {
     /// <summary>
     /// Interface to enforce common properties for user models (UsersSystem and UsersKit)

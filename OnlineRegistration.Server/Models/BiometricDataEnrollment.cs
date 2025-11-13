@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace makatizen_app.Server.Models
+namespace OnlineRegistration.Server.Models
 {
     [Table("BiometricDataEnrollment")]
     public class BiometricDataEnrollment

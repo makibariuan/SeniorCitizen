@@ -1,18 +1,18 @@
-﻿using makatizen_app.Server.Data;
-using makatizen_app.Server.DTOs;
-using makatizen_app.Server.Models;
+﻿
+using OnlineRegistration.Server.DTOs;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OnlineRegistration.Server.Data;
 using OnlineRegistration.Server.Models;
 using OnlineRegistration.Server.Services;
-using SeniorCitizen.Server.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace makatizen_app.Server.Controllers
+namespace OnlineRegistration.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -93,7 +93,7 @@ namespace makatizen_app.Server.Controllers
                         DateCapture = b.DateCapture ?? DateTime.MinValue,
                         DateUpload = b.DateUpload ?? DateTime.MinValue,
                         DateActivate = b.DateActivate,
-                        Status = b.Status, 
+                        Status = b.Status,
 
                         // Map all biometric fields
                         Photo = b.Photo,
@@ -312,7 +312,7 @@ namespace makatizen_app.Server.Controllers
         }
 
         [HttpPut("applicant/biometrics-lock")]
-        public async Task<ActionResult> FinalizeCapture(SeniorCitizen.Server.DTOs.BiometricDataEnrollmentDto dto)
+        public async Task<ActionResult> FinalizeCapture(BiometricDataEnrollmentDto dto)
         {
             // Find the latest biometric enrollment record for the given PersonId 
             // that is currently in a 'pending' status (Status == 1).

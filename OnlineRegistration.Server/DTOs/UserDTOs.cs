@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace makatizen_app.Server.DTOs
+namespace OnlineRegistration.Server.DTOs
 {
     // =========================================================
     //               USER CREATION/UPDATE DTOs
@@ -15,29 +15,31 @@ namespace makatizen_app.Server.DTOs
     public class UserCreateDto
     {
         [Required]
-        public int UserType { get; set; } // Must be 1 (Super Admin), 2 (System User), or 3 (Kit User)
-
+        public int UserType { get; set; } 
         [Required, MaxLength(100)]
         public string Username { get; set; } = string.Empty;
+        public int UserRole { get; set; }
     }
 
     // DTO for returning System User data
-    public class UserSystemReadDto
+    public class UserReadDto
     {
         public int Id { get; set; }
         public int UserType { get; set; }
         public string Username { get; set; } = string.Empty;
-        public bool MustResetPassword { get; set; }
         public bool Status { get; set; }
+        public int UserRole { get; set; }
+        public string RoleDesc { get; set; } = string.Empty; 
     }
 
     // DTO for returning Kit User data
-    public class UserKitReadDto
-    {
-        public int Id { get; set; }
-        public int UserType { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public bool MustResetPassword { get; set; }
-        public bool Status { get; set; }
-    }
+    //public class UserKitReadDto
+    //{
+    //    public int Id { get; set; }
+    //    public int UserType { get; set; }
+    //    public string Username { get; set; } = string.Empty;
+    //    public bool MustResetPassword { get; set; }
+    //    public bool Status { get; set; }
+    //}
+
 }

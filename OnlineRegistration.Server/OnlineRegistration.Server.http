@@ -1,0 +1,6 @@
+@OnlineRegistration.Server_HostAddress = https://localhost:5000
+
+GET {{OnlineRegistration.Server_HostAddress}}/
+Accept: application/json
+
+###

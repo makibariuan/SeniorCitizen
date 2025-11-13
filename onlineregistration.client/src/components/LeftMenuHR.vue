@@ -1,27 +1,19 @@
 <template>
-  <div class="left-menu">
-    <div class="logo" @click="goTo('/dashboard')">
-      <div style="display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px;">
-        <img src="../assets/makati-logo.png" alt="Makati" />
-        <div>
-          <div>REPUBLIC OF THE PHILIPPINES</div>
-          <p>City of Makati</p>
-        </div>
-      </div>
-    </div>
-
-    <ul>
-      <li v-for="item in menuItems"
-          :key="item.name"
-          class="menu-item"
-          :class="{ active: $route.path === item.path }"
-          @click="handleMenuClick(item)">
-        {{ item.name }}
-      </li>
-
-      <li class="logout" @click="logout">Logout</li>
-    </ul>
-  </div>
+  <aside :class="['sidebar', { 'sidebar-closed': !sidebarOpen }]">
+    <nav>
+      <ul>
+        <li :class="{ active: activeView === 'kitUsers' }" @click="$emit('switch-view', 'kitUsers')">
+          Manage Kit Users
+        </li>
+        <li :class="{ active: activeView === 'systemUsers' }" @click="$emit('switch-view', 'systemUsers')">
+          Manage System Users
+        </li>
+        <li :class="{ active: activeView === 'citizenRecords' }" @click="$emit('switch-view', 'citizenRecords')">
+          View Citizen Records
+        </li>
+      </ul>
+    </nav>
+  </aside>
 </template>
 
 <script setup>
@@ -81,7 +73,7 @@
   });
 </script>
 
-<style scoped>
+<!--<style scoped>
   .left-menu {
     position: fixed;
     top: 0;
@@ -167,5 +159,49 @@
       margin-top: auto;
       color: white;
       border-top: 1px solid #0D205B;
+    }
+</style>-->
+
+<style scoped>
+  .sidebar {
+    width: 220px;
+    background-color: #006666;
+    color: white;
+    padding: 25px 20px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 40px);
+    user-select: none;
+    transition: width 0.3s ease, padding 0.3s ease;
+  }
+
+  .sidebar-closed {
+    width: 0;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .sidebar ul {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .sidebar li {
+    padding: 15px 18px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+    .sidebar li.active,
+    .sidebar li:hover {
+      background-color: #004d4d;
+      box-shadow: inset 3px 0 0 0 #00bfa5;
     }
 </style>

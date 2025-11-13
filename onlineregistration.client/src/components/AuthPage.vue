@@ -1,151 +1,46 @@
 <template>
-
-  <!-- <link rel="stylesheet" href="styles.css"></link> -->
-  <!-- If you need reCAPTCHA, load the script in index.html or use vue-meta/head management -->
-  <!-- Use vue-meta or @vueuse/head for head management -->
-
-  <div class="logo-container">
-    <!-- image here -->
-    <img src="@/assets/makati-logo.png" alt="Makati Logo" style="width:140px; height:auto; margin-bottom:16px;" />
-    <div class="page-title">
-      <h2>Welcome to</h2>
-      <h1>Makati Onboarding System</h1>
-    </div>
-  </div>
-  <div class="auth-container">
-    <div class="auth-box">
-      <h2 class="auth-title">{{ isLogin ? "Sign In" : "Create Account" }}</h2>
-
-      <!-- Login Form -->
-      <div v-if="isLogin && loginStep === 'credentials'">
-        <p class="auth-input-label">Email Address</p>
-        <input v-model="username" type="email" placeholder="Email Address" class="auth-input" @click="" />
-        <p class="auth-input-label">Password</p>
-        <div class="password-wrapper">
-          <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="Password" class="auth-input" />
-          <span class="toggle-password" @click="showPassword = !showPassword">
-            <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-          </span>
-        </div>
-
-        <p class="forgot-password" @click="openForgotPasswordDialog">Forgot password?</p>
-        <button @click="handleLogin" class="auth-btn" :disabled="!canLogin">Sign In</button>
-
-        <p>
-          Don't have an account?
-          <span class="link" @click="isLogin = false">Create account</span>
-        </p>
-
-        <div class="spacer"></div>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="left-section">
+        <img src="@/assets/lungsod_ng_makati_logo.png" alt="Makati Logo" class="logo" />
+        <h1>Makati Senior Citizen System</h1>
       </div>
 
-      <!-- Register Form -->
-      <div v-else-if="!isLogin">
+      <div class="right-section">
+        <img src="@/assets/lungsod_ng_makati_logo.png" alt="Makati Logo" class="mobile-logo" />
+        <h2>Log In</h2>
 
-        <div class="register-grid-container">
-          <div>
-            <p class="auth-input-label">Employee ID</p>
-            <input v-model="employeeID" type="text" placeholder="Employee ID" class="auth-input" />
+        <form @submit.prevent="handleLogin" class="login-form">
+          <div class="input-group">
+            <input v-model="username"
+                             type="text"
+                             placeholder="Username"
+                             required
+                             />
           </div>
-          <div>
-            <p class="auth-input-label">Birthday</p>
-            <input v-model="birthday" type="date" placeholder="Birthday" class="auth-input" />
-          </div>
-          <div>
-            <p class="auth-input-label">First Name</p>
-            <input v-model="firstName" type="text" placeholder="First Name" class="auth-input" />
-          </div>
-          <div>
-            <p class="auth-input-label">Last Name</p>
-            <input v-model="lastName" type="text" placeholder="Last Name" class="auth-input" />
-          </div>
-          <div>
-            <p class="auth-input-label">Email Address (Will be your username)</p>
-            <input v-model="email" type="email" placeholder="juandelacruz@makati.com.ph" class="auth-input" />
-          </div>
-          <div>
-            <p class="auth-input-label">Password</p>
-            <div class="password-wrapper">
-              <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="Password" class="auth-input" @input="validatePassword"/>
-              <span class="toggle-password" @click="showPassword = !showPassword">
-                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-              </span>
-            </div>
-          </div>
-          <div>
-            <p class="auth-input-label">Confirm Password</p>
-            <div class="password-wrapper">
-              <input :type="showConfirm ? 'text' : 'password'" v-model="confirmPassword" placeholder="Confirm Password" class="auth-input" />
-              <span class="toggle-password" @click="showConfirm = !showConfirm">
-                <i :class="showConfirm ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-              </span>
-            </div>
-          </div>
-          <div class="register-notes">
-            <p class="password-title">Your Password Must Have:</p>
-            <ul class="password-rules">
-              <li><i :class="['fa', hasUppercase ? 'fa-check-circle valid' : 'fa-times-circle invalid']"></i> One uppercase letter</li>
-              <li><i :class="['fa', hasLowercase ? 'fa-check-circle valid' : 'fa-times-circle invalid']"></i> One lowercase letter</li>
-              <li><i :class="['fa', hasNumber ? 'fa-check-circle valid' : 'fa-times-circle invalid']"></i> At least one number</li>
-              <li><i :class="['fa', noSpaces ? 'fa-check-circle valid' : 'fa-times-circle invalid']"></i> No spaces</li>
-              <li><i :class="['fa', minLength ? 'fa-check-circle valid' : 'fa-times-circle invalid']"></i> 8 or more characters</li>
-            </ul>
-          </div>
-        </div>
 
-        <div class="terms-wrapper">
-          <input type="checkbox" v-model="isTermsAccepted" />
-          I accept the
-          <span @click="showTerms = true">Terms of Service</span>
-        </div>
+          <div class="input-group">
+            <span class="toggle-password" @click="showPassword = !showPassword">
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </span>
+          </div>
 
-        <TermsOfService :show="showTerms"
-                        @update:show="showTerms = $event"
-                        @accepted="isTermsAccepted = true" />
+          <p v-if="error" class="error-message">{{ error }}</p>
 
-        <Captcha :key="captchaKey" @verified="onCaptchaVerified" />
+          <div class="forgot-password">
+            <router-link to="/forgot-password" class="link">Forgot Password?</router-link>
+          </div>
 
-        <p v-if="passwordMismatch" class="error-text">Passwords do not match</p>
-        <button @click="handleRegister" class="auth-btn" :disabled="!canRegister">Sign Up</button>
-
-        <!-- <div class="divider">OR</div> -->
-        <!-- <button @click="isLogin = true" class="secondary-btn">Back to Login</button> -->
-        <p>
-          Already have an account?
-          <span class="link" @click="isLogin = true">Sign In</span>
-        </p>
-        <div style="width: 40vw;"></div>
+          <button type="submit"
+                           class="login-btn"
+                           >
+            {{ "Authenticating..." : "Login" }}
+          </button>
+        </form>
       </div>
     </div>
   </div>
-
-  <!-- Success/Error Dialog -->
-  <DialogBox :show="showDialog" :title="dialogTitle" :message="dialogMessage" @close="showDialog = false" />
-
-  <!-- Forgot Password Dialog -->
-  <DialogBox :show="showForgotDialog" title="Reset Password" @close="showForgotDialog = false">
-    <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
-      <input v-model="forgotEmail" type="email" placeholder="Enter your email" class="auth-input" />
-      <button @click="handleForgotPassword" class="auth-btn">Send Reset Link</button>
-    </div>
-  </DialogBox>
-
-  <!-- OTP Dialog -->
-  <DialogBox :show="showOtpDialog" title="OTP Verification" @close="showOtpDialog = false">
-    <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
-      <p>Enter the 6-digit OTP sent to your email to verify your login.</p>
-      <input v-model="otp" type="text" maxlength="6" placeholder="Enter OTP" class="auth-input" />
-      <p v-if="otpError" class="error-text">{{ otpError }}</p>
-      <button @click="handleVerifyOtp" class="auth-btn" :disabled="!otp">Submit</button>
-    </div>
-  </DialogBox>
-
-
-  <!-- Loading Dialog (always on top of everything) -->
-  <LoadingDialog :visible="isLoading" />
-
 </template>
-
 
 <script setup>
   import Captcha from '@/components/Captcha.vue'
@@ -430,7 +325,6 @@
 </script>
 
 
-
 <!-- <style scoped>
   .logo-container{
     padding-top: 10vw;
@@ -650,3 +544,7 @@
     }
   }
 </style> -->
+
+<style scoped>
+  @import "@/assets/css/auth.css";
+</style>

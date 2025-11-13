@@ -1,82 +1,101 @@
 <template>
-  <div class="layout">
-    <LeftMenu @navigate="onNavigate" class="leftMenu" />
-    <Header class="header" />
+  <div class="dashboard-content">
+    <h1 class="welcome-title">Administrator Dashboard 🛡️</h1>
+    <p class="role-info">
+      Welcome back, **{{ getRoleName(userRole) }}**. Use the sections below to manage users and citizen data.
+    </p>
 
-    <div class="content">
-      <img src="../assets/makati-logo.png" alt="Makati Logo" />
-      <h2 style="font-weight: bold">Hi, {{ firstname }}</h2>
-      <h2>Welcome to Human Resources Dashboard</h2>
+    <section v-if="activeView === 'kitUsers' || activeView === 'systemUsers'">
+      <h2 class="section-title">{{ activeView === 'kitUsers' ? 'Kit Users' : 'System Users' }}</h2>
+      <button class="add-btn" @click="openAddForm">+ Add User</button>
 
-      <!-- Status Container -->
-      <div class="status-container">
-        <template v-if="Object.keys(idStats).length">
-          <div class="status-card">
-            <div class="status-icon">👥</div>
-            <div class="status-info">
-              <div class="status-number">{{ idStats.employeeCount }}</div>
-              <div class="status-label">Total Employees</div>
-            </div>
+      <template v-if="userList && userList.length">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in userList" :key="user.id">
+              <td>{{ user.id }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ getRoleName(user.userType) }}</td>
+              <td>
+                <span :class="{'status-active': user.isActive, 'status-inactive': !user.isActive}">
+                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <button class="status-btn" @click="toggleUserStatus(user)">
+                  {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+                <button class="reset-btn" @click="resetUserPassword(user)">Reset Password</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
+      <p v-else-if="!loading && !error" class="text-center p-4 text-gray-600">No users found for this category.</p>
+    </section>
+
+    <section v-else-if="activeView === 'citizenRecords'">
+      <h2 class="section-title">Citizen Records</h2>
+      <p class="metric-number">{{ metrics.citizenCount }}</p>
+      <p>Total enrolled citizens with biometric and personal records.</p>
+      <p class="detail">Last Enrollment: {{ metrics.lastEnrollmentDate || 'N/A' }}</p>
+      <button class="action-button success">View Citizen Records</button>
+    </section>
+
+    <div v-if="showForm" class="form-overlay" @click.self="closeForm">
+      <div class="form-popup">
+        <h3>{{ editingUser ? 'Edit User Details' : 'Create New User' }}</h3>
+        <form @submit.prevent="saveUser">
+          <label>Username</label>
+          <input v-model="form.username" required />
+          <p v-if="formValidation.username" class="validation-error">{{ formValidation.username }}</p>
+
+          <label>Role</label>
+          <select v-model.number="form.userType" required>
+            <option :value="1">Super Admin</option>
+            <option :value="2">System User</option>
+            <option v-if="activeView === 'kitUsers' || form.userType === 3" :value="3">Kit User</option>
+          </select>
+
+          <div class="form-actions">
+            <button type="submit" class="save-btn">Save</button>
+            <button type="button" class="cancel-btn" @click="closeForm">Cancel</button>
           </div>
-
-          <div class="status-card">
-            <div class="status-icon">📅</div>
-            <div class="status-info">
-              <div class="status-number">{{ idStats.forSchedule }}</div>
-              <div class="status-label">For Schedule</div>
-            </div>
-          </div>
-
-          <div class="status-card">
-            <div class="status-icon">📅</div>
-            <div class="status-info">
-              <div class="status-number">{{ idStats.scheduled }}</div>
-              <div class="status-label">For Capture</div>
-            </div>
-          </div>
-
-          <div class="status-card">
-            <div class="status-icon">📸</div>
-            <div class="status-info">
-              <div class="status-number">{{ idStats.captured }}</div>
-              <div class="status-label">Captured</div>
-            </div>
-          </div>
-
-          <div class="status-card">
-            <div class="status-icon">🖨️</div>
-            <div class="status-info">
-              <div class="status-number">{{ idStats.forPrinting }}</div>
-              <div class="status-label">For Printing</div>
-            </div>
-          </div>
-
-          <!-- New Active Cards Status -->
-          <div class="status-card">
-            <div class="status-icon">💳</div>
-            <div class="status-info">
-              <div class="status-number">{{ idStats.activeCards }}</div>
-              <div class="status-label">Active Cards</div>
-            </div>
-          </div>
-        </template>
-        <template v-else>
-          <p>Loading stats...</p>
-        </template>
+        </form>
       </div>
     </div>
 
-    <!-- Reusable dialog -->
-    <DialogBox :show="showDialog"
-               :title="dialogTitle"
-               :message="dialogMessage"
-               @close="showDialog = false" />
+    <div v-if="showConfirmation" class="form-overlay" @click.self="handleConfirmation(false)">
+      <div class="form-popup">
+        <h3>Confirm Action</h3>
+        <p>{{ confirmationMessage }}</p>
+        <div class="form-actions">
+          <button class="cancel-btn" @click="handleConfirmation(false)">Cancel</button>
+          <button class="save-btn" @click="handleConfirmation(true)">Confirm</button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Loading Dialog (always on top of everything) -->
-    <LoadingDialog :visible="isLoading" />
+    <div v-if="loading" class="loading-overlay">
+      <p>Loading data...</p>
+      <p>If this persists, check network or authorization.</p>
+    </div>
+
+    <div v-if="error" class="error-box">
+      <p>{{ error }}</p>
+    </div>
+
   </div>
 </template>
-
 
 <script setup>
   import { ref, onMounted, computed } from "vue";
@@ -146,7 +165,7 @@
   }
 </script>
 
-<style>
+<!--<style>
   .layout {
     display: flex;
     flex-direction: column;
@@ -231,4 +250,259 @@
     font-size: 0.9rem;
     color: #555;
   }
+</style>-->
+
+<style scoped>
+  /* Styles remain unchanged */
+  .dashboard-content {
+    padding: 20px;
+    background-color: #f4f4f4;
+    min-height: 100vh;
+  }
+
+  .welcome-title {
+    font-size: 2em;
+    color: #0d47a1;
+    margin-bottom: 10px;
+  }
+
+  .role-info {
+    margin-bottom: 25px;
+    color: #555;
+    font-style: italic;
+  }
+
+  .section-title {
+    font-size: 1.5em;
+    color: #333;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 5px;
+    margin-top: 30px;
+    margin-bottom: 15px;
+  }
+
+  .add-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: background-color 0.2s;
+  }
+
+    .add-btn:hover {
+      background-color: #43a047;
+    }
+
+  .user-table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: white;
+  }
+
+    .user-table th, .user-table td {
+      border: 1px solid #ddd;
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    .user-table th {
+      background-color: #0d47a1;
+      color: white;
+      text-transform: uppercase;
+      font-size: 0.9em;
+    }
+
+    .user-table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .user-table tr:hover {
+      background-color: #f1f1f1;
+    }
+
+  /* --- BUTTON STYLES --- */
+  .status-btn {
+    background-color: #ff9800; /* Orange for status toggle */
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: background-color 0.2s;
+  }
+
+    .status-btn:hover {
+      background-color: #fb8c00;
+    }
+
+  .reset-btn {
+    background-color: #2196f3; /* Blue for reset */
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+    .reset-btn:hover {
+      background-color: #1e88e5;
+    }
+
+  /* --- STATUS STYLES --- */
+  .status-active, .status-inactive {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.85em;
+  }
+
+  .status-active {
+    background-color: #e8f5e9; /* Light green */
+    color: #388e3c; /* Dark green text */
+  }
+
+  .status-inactive {
+    background-color: #ffebee; /* Light red */
+    color: #d32f2f; /* Dark red text */
+  }
+
+  /* Modal/Form Styles */
+  .form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .form-popup {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 450px;
+  }
+
+    .form-popup h3 {
+      margin-top: 0;
+      color: #0d47a1;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .form-popup label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .form-popup input, .form-popup select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+  .validation-error {
+    color: #d32f2f;
+    font-size: 0.85em;
+    margin: 5px 0 0;
+  }
+
+  .form-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .save-btn {
+    background-color: #0d47a1;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+    .save-btn:hover {
+      background-color: #1976d2;
+    }
+
+  .cancel-btn {
+    background-color: #bbb;
+    color: #333;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+    .cancel-btn:hover {
+      background-color: #999;
+    }
+
+  .loading-overlay, .error-box {
+    padding: 15px;
+    border-radius: 8px;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1001;
+    font-weight: bold;
+  }
+
+  .loading-overlay {
+    background-color: #bbdefb;
+    color: #0d47a1;
+  }
+
+  .error-box {
+    background-color: #ffcdd2;
+    color: #b71c1c;
+  }
+
+  .metric-number {
+    font-size: 3em;
+    color: #0d47a1;
+    margin: 5px 0;
+    font-weight: 700;
+  }
+
+  .detail {
+    color: #777;
+    margin-bottom: 20px;
+  }
+
+  .action-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+    .action-button.success {
+      background-color: #4caf50;
+    }
 </style>

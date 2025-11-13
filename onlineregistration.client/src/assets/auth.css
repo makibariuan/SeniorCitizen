@@ -1,0 +1,216 @@
+/*
+ * AUTH.CSS - DARK BLUE THEME
+ * Applied to LoginView and potentially other Auth views.
+ */
+
+/* --- COLOR PALETTE ---
+ * Primary/Branding: #004085 (Deep Blue)
+ * Dark Accent/Titles: #002a57 (Navy)
+ * Hover/Focus: #002a57
+ * Background: #eaf3ff (Light Blue Wash)
+ */
+
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100vw;
+  /* Darker Blue Background Gradient */
+  background: linear-gradient(135deg, #eaf3ff, #f9ffff);
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+.login-card {
+  display: flex;
+  width: 100%;
+  /* Increased size for bigger card */
+  max-width: 1000px;
+  min-height: 550px;
+  background: white;
+  border-radius: 15px;
+  /* Darker blue shadow */
+  box-shadow: 0 10px 35px rgba(0, 42, 87, 0.2);
+  overflow: hidden;
+}
+
+/* ------------------- LEFT SECTION (Branding) ------------------- */
+.left-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  /* Deep Blue background */
+  background: #004085;
+  color: white;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+}
+
+  .left-section .logo {
+    width: 130px; /* Slightly larger logo */
+    height: 130px;
+    margin-bottom: 25px;
+  }
+
+  .left-section h1 {
+    /* MATCHED FONT SIZE AND WEIGHT */
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+/* ------------------- RIGHT SECTION (Form) ------------------- */
+.right-section {
+  flex: 1;
+  padding: 50px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #ffffff;
+}
+
+  .right-section h2 {
+    font-size: 2.4rem; /* Larger heading */
+    font-weight: 800;
+    margin-bottom: 30px;
+    /* Navy Blue text */
+    color: #002a57;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+  }
+
+.mobile-logo {
+  display: none;
+}
+
+/* ------------------- FORM ELEMENTS ------------------- */
+.login-form {
+  width: 100%;
+  max-width: 380px; /* Wider form container */
+  margin: 0 auto;
+}
+
+.input-group {
+  margin-bottom: 25px;
+  position: relative;
+}
+
+  .input-group input {
+    width: 100%;
+    padding: 15px 15px; /* Slightly larger padding */
+    border: 1px solid #cbd5e1;
+    border-radius: 10px; /* More rounded corners */
+    font-size: 1.05rem;
+    transition: border-color 0.3s ease;
+    font-family: 'Inter', sans-serif; /* Explicit font application */
+  }
+
+    .input-group input:focus {
+      outline: none;
+      /* Deep Blue border on focus */
+      border-color: #004085;
+      /* Darker Blue shadow on focus */
+      box-shadow: 0 0 8px rgba(0, 64, 133, 0.4);
+    }
+
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #64748b;
+}
+
+/* ------------------- BUTTONS & MESSAGES ------------------- */
+.login-btn {
+  width: 100%;
+  padding: 18px; /* Larger button */
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  /* Deep Blue button */
+  background: #004085;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s;
+  margin-top: 15px; /* Increased margin */
+  font-family: 'Inter', sans-serif;
+}
+
+  .login-btn:hover:not(:disabled) {
+    /* Navy Blue hover */
+    background: #002a57;
+    transform: translateY(-2px);
+  }
+
+  .login-btn:disabled {
+    background: #b3cde0;
+    cursor: not-allowed;
+  }
+
+.error-message {
+  color: #ef4444;
+  text-align: center;
+  margin-bottom: 15px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.forgot-password {
+  text-align: right;
+  margin-bottom: 30px; /* Increased margin */
+}
+
+  .forgot-password .link {
+    /* Deep Blue link color */
+    color: #004085;
+    text-decoration: none;
+    font-weight: 600; /* Bolder link */
+    transition: color 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+
+    .forgot-password .link:hover {
+      /* Navy Blue link hover */
+      color: #002a57;
+      text-decoration: underline;
+    }
+
+/* ------------------- MEDIA QUERIES (Mobile responsiveness) ------------------- */
+@media (max-width: 768px) {
+  .login-card {
+    flex-direction: column;
+    max-width: 450px; /* Adjusted max width for mobile */
+    min-height: auto;
+  }
+
+  .left-section {
+    display: none;
+  }
+
+  .right-section {
+    padding: 35px 30px;
+  }
+
+  .mobile-logo {
+    display: block;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 25px auto;
+  }
+
+  .right-section h2 {
+    font-size: 2rem;
+    margin-bottom: 25px;
+  }
+
+  .login-form {
+    max-width: none; /* Allow form to use available width */
+  }
+}

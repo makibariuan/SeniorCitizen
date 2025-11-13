@@ -11,15 +11,14 @@ namespace OnlineRegistration.Server.Models
 
     public class BiometricDevice
     {
+        //gayahin sa db
         public string BiometricDeviceID { get; set; }
         public string DeviceType { get; set; }
         public string IPAddress { get; set; }
         public int PortNumber { get; set; }
         public int Mode { get; set; }
-        public int DepartmenID { get; set; }
         public int Status { get; set; }
 
-        public Department Department { get; set; }
     }
 
 

@@ -1,29 +1,71 @@
 ﻿using makatizen_app.Server.Data;
 using makatizen_app.Server.DTOs;
 using makatizen_app.Server.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OnlineRegistration.Server.Data;
-using OnlineRegistration.Server.DTOs;
 using OnlineRegistration.Server.Models;
 using OnlineRegistration.Server.Services;
 using SeniorCitizen.Server.DTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace OnlineRegistration.Server.Controllers
+namespace makatizen_app.Server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class KitController : ControllerBase
+
+    [Authorize]
+    public class KitUserController : ControllerBase
     {
         private readonly AppDbContext _context;
         private readonly AfisQueueService _afisQueue;
-
-        public KitController(AppDbContext context, AfisQueueService afisQueue)
+        public KitUserController(AppDbContext context, AfisQueueService afisQueue)
         {
             _context = context;
             _afisQueue = afisQueue;
         }
 
+        // --- GET: List All Citizens with Latest Biometric Info ---
+        [HttpGet("citizen-list")]
+        public async Task<ActionResult<IEnumerable<CitizenReadDto>>> GetCitizens()
+        {
+            var citizens = await _context.Citizens
+                .OrderByDescending(c => c.CreatedAt)
+                .Select(c => new CitizenReadDto
+                {
+                    Id = c.Id,
+                    CitizenType = c.CitizenType,
+                    FirstName = c.FirstName,
+                    LastName = c.LastName,
+                    BirthDate = c.BirthDate,
+                    CreatedAt = c.CreatedAt,
+                    BiometricBypass = c.BiometricBypass,
+
+                    // Select latest biometric metadata using EF Core in-memory sorting
+                    BiometricId = c.BiometricEnrollments
+                        .OrderByDescending(b => b.DateUpload)
+                        .Select(b => (int?)b.Id)
+                        .FirstOrDefault(),
+
+                    DateCapture = c.BiometricEnrollments
+                        .OrderByDescending(b => b.DateUpload)
+                        .Select(b => (DateTime?)b.DateCapture)
+                        .FirstOrDefault(),
+
+                    Status = c.BiometricEnrollments
+                        .OrderByDescending(b => b.DateUpload)
+                        .Select(b => (int?)b.Status)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+
+            return Ok(citizens);
+        }
+
+        // --- GET: Get specific citizen with detailed biometric history (Refactored to use DTOs) ---
         [HttpGet("citizen-list/{id}")]
         public async Task<IActionResult> GetCitizen(int id)
         {
@@ -51,7 +93,7 @@ namespace OnlineRegistration.Server.Controllers
                         DateCapture = b.DateCapture ?? DateTime.MinValue,
                         DateUpload = b.DateUpload ?? DateTime.MinValue,
                         DateActivate = b.DateActivate,
-                        Status = b.Status,
+                        Status = b.Status, 
 
                         // Map all biometric fields
                         Photo = b.Photo,
@@ -79,42 +121,7 @@ namespace OnlineRegistration.Server.Controllers
             return Ok(detailDto);
         }
 
-        //[HttpPut("applicant/biometrics")]
-        //public async Task<ActionResult> UploadApplicantBiometrics(EmployeeIDBiometricsDto dto)
-        //{
-        //    var application = await _context.EmployeeIDApplications
-        //        .Where(p => p.ApplicationCode == dto.ApplicationCode && p.Status == 1)
-        //        .FirstOrDefaultAsync();
-
-        //    if (application == null)
-        //        return NotFound();
-
-        //    // Update only fields that have data
-        //    if (dto.DateCapture.HasValue) application.DateCapture = dto.DateCapture.Value;
-        //    if (!string.IsNullOrEmpty(dto.Photo)) application.Photo = dto.Photo;
-        //    if (!string.IsNullOrEmpty(dto.Signature)) application.Signature = dto.Signature;
-
-        //    if (!string.IsNullOrEmpty(dto.LeftThumb)) application.LeftThumb = dto.LeftThumb;
-        //    if (!string.IsNullOrEmpty(dto.LeftIndex)) application.LeftIndex = dto.LeftIndex;
-        //    if (!string.IsNullOrEmpty(dto.LeftMiddle)) application.LeftMiddle = dto.LeftMiddle;
-        //    if (!string.IsNullOrEmpty(dto.LeftRing)) application.LeftRing = dto.LeftRing;
-        //    if (!string.IsNullOrEmpty(dto.LeftSmall)) application.LeftSmall = dto.LeftSmall;
-
-        //    if (!string.IsNullOrEmpty(dto.RightThumb)) application.RightThumb = dto.RightThumb;
-        //    if (!string.IsNullOrEmpty(dto.RightIndex)) application.RightIndex = dto.RightIndex;
-        //    if (!string.IsNullOrEmpty(dto.RightMiddle)) application.RightMiddle = dto.RightMiddle;
-        //    if (!string.IsNullOrEmpty(dto.RightRing)) application.RightRing = dto.RightRing;
-        //    if (!string.IsNullOrEmpty(dto.RightSmall)) application.RightSmall = dto.RightSmall;
-
-        //    if (!string.IsNullOrEmpty(dto.EyeLeft)) application.EyeLeft = dto.EyeLeft;
-        //    if (!string.IsNullOrEmpty(dto.EyeRight)) application.EyeRight = dto.EyeRight;
-        //    if (!string.IsNullOrEmpty(dto.BiometricLeft)) application.BiometricLeft = dto.BiometricLeft;
-        //    if (!string.IsNullOrEmpty(dto.BiometricRight)) application.BiometricRight = dto.BiometricRight;
-
-        //    await _db.SaveChangesAsync();
-        //    return Ok(new { message = "Biometrics updated successfully" });
-        //}
-
+        // --- POST: Create New Citizen and Biometric Enrollment ---
         [HttpPost("create-new-citizen-and-enrollment")]
         public async Task<IActionResult> CreateCitizen([FromBody] CitizenCreateDto dto)
         {
@@ -182,53 +189,62 @@ namespace OnlineRegistration.Server.Controllers
             });
         }
 
-        //[HttpPut("applicant/biometrics-lock")]
-        //public async Task<ActionResult> FinalizeCapture(BiometricDataEnrollmentDto dto)
-        //{
-        //    var application = await _db.EmployeeIDApplications
-        //        .Where(p => p.ApplicationCode == dto.ApplicationCode && p.Status == 1)
-        //        .FirstOrDefaultAsync();
+        // --- PUT: Update Citizen Personal Details and optionally add a new Biometric Enrollment ---
+        [HttpPut("update-citizen/{id}")]
+        public async Task<IActionResult> UpdateCitizen(int id, [FromBody] CitizenCreateDto dto)
+        {
+            var citizen = await _context.Citizens
+                .Include(c => c.BiometricEnrollments)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
-        //    if (application == null)
-        //        return NotFound();
+            if (citizen == null)
+            {
+                return NotFound(new { message = "Citizen not found." });
+            }
 
-        //    // Get Philippine Standard Time (UTC+8)
-        //    var phTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-        //    application.DateCapture = TimeZoneInfo.ConvertTime(DateTime.UtcNow, phTimeZone);
-        //    application.Status = 2; // completed
+            // --- Update Personal Details ---
+            citizen.CitizenType = dto.CitizenType;
+            citizen.FirstName = dto.FirstName;
+            citizen.LastName = dto.LastName;
+            citizen.BirthDate = dto.BirthDate;
 
-        //    await _db.SaveChangesAsync();
+            // Optional: If the PUT request includes new biometric data, create a new enrollment record
+            if (dto.Biometrics != null)
+            {
+                var newBiometric = new BiometricDataEnrollment
+                {
+                    PersonId = citizen.Id,
+                    DateCapture = DateTime.UtcNow,
+                    DateUpload = DateTime.UtcNow,
+                    DateActivate = null,
 
-        //    // ✅ Queue all available fingerprints for AFIS
-        //    var fingerprints = new Dictionary<int, string?>
-        //    {
-        //        { 1, application.LeftThumb },
-        //        { 2, application.LeftIndex },
-        //        { 3, application.LeftMiddle },
-        //        { 4, application.LeftRing },
-        //        { 5, application.LeftSmall },
-        //        { 6, application.RightThumb },
-        //        { 7, application.RightIndex },
-        //        { 8, application.RightMiddle },
-        //        { 9, application.RightRing },
-        //        { 10, application.RightSmall }
-        //    };
+                    // --- MAPPING BIOMETRIC FIELDS ---
+                    Photo = dto.Biometrics.Photo,
+                    Signature = dto.Biometrics.Signature,
+                    LeftThumb = dto.Biometrics.LeftThumb,
+                    LeftIndex = dto.Biometrics.LeftIndex,
+                    LeftMiddle = dto.Biometrics.LeftMiddle,
+                    LeftRing = dto.Biometrics.LeftRing,
+                    LeftSmall = dto.Biometrics.LeftSmall,
+                    RightThumb = dto.Biometrics.RightThumb,
+                    RightIndex = dto.Biometrics.RightIndex,
+                    RightMiddle = dto.Biometrics.RightMiddle,
+                    RightRing = dto.Biometrics.RightRing,
+                    RightSmall = dto.Biometrics.RightSmall,
+                    EyeLeft = dto.Biometrics.EyeLeft,
+                    EyeRight = dto.Biometrics.EyeRight,
+                    BiometricLeft = dto.Biometrics.BiometricLeft,
+                    BiometricRight = dto.Biometrics.BiometricRight,
 
-        //    foreach (var fp in fingerprints)
-        //    {
-        //        if (!string.IsNullOrEmpty(fp.Value))
-        //        {
-        //            _afisQueue.Enqueue(new AfisJob
-        //            {
-        //                PersonId = application.PersonID,
-        //                FingerPosition = fp.Key,
-        //                Base64Image = fp.Value!
-        //            });
-        //        }
-        //    }
+                    Hit = 0, // Default value
+                    Status = dto.Biometrics.Status ?? 1 // Default status to 1 if null
+                };
+                _context.BiometricEnrollments.Add(newBiometric);
+            }
 
-        //    return Ok(new { message = "Biometrics locked and enqueued for AFIS processing." });
-        //}
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
 
         [HttpPut("set-bypass-status/{id}")]
         public async Task<IActionResult> SetBiometricBypassStatusAndLog(int id, [FromBody] BypassLogDto dto)
@@ -292,6 +308,64 @@ namespace OnlineRegistration.Server.Controllers
                 message = statusMessage,
                 citizenId = citizen.Id,
                 newBypassStatus = citizen.BiometricBypass
+            });
+        }
+
+        [HttpPut("applicant/biometrics-lock")]
+        public async Task<ActionResult> FinalizeCapture(SeniorCitizen.Server.DTOs.BiometricDataEnrollmentDto dto)
+        {
+            // Find the latest biometric enrollment record for the given PersonId 
+            // that is currently in a 'pending' status (Status == 1).
+            var enrollment = await _context.BiometricEnrollments
+                .Where(b => b.PersonId == dto.PersonId && b.Status == 1)
+                .OrderByDescending(b => b.DateUpload)
+                .FirstOrDefaultAsync();
+
+            if (enrollment == null)
+                return NotFound(new { message = $"Pending biometric enrollment not found for Person ID {dto.PersonId}." });
+
+            // Get Philippine Standard Time (UTC+8).
+            var phTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Philippine Standard Time");
+
+            // 1. Update the enrollment record status and date.
+            enrollment.DateCapture = TimeZoneInfo.ConvertTime(DateTime.UtcNow, phTimeZone);
+            enrollment.Status = 2; // Set to 'Completed' or 'Locked'
+
+            await _context.SaveChangesAsync();
+
+            // ✅ Queue all available fingerprints for AFIS using the data stored in the DB record
+            var fingerprints = new Dictionary<int, string?>
+    {
+        { 1, enrollment.LeftThumb },
+        { 2, enrollment.LeftIndex },
+        { 3, enrollment.LeftMiddle },
+        { 4, enrollment.LeftRing },
+        { 5, enrollment.LeftSmall },
+        { 6, enrollment.RightThumb },
+        { 7, enrollment.RightIndex },
+        { 8, enrollment.RightMiddle },
+        { 9, enrollment.RightRing },
+        { 10, enrollment.RightSmall }
+    };
+
+            foreach (var fp in fingerprints)
+            {
+                if (!string.IsNullOrEmpty(fp.Value))
+                {
+                    // Assuming _afisQueue is correctly injected and AfisJob is defined
+                    _afisQueue.Enqueue(new OnlineRegistration.Server.Models.AfisJob
+                    {
+                        PersonId = enrollment.PersonId, // Use the PersonId from the enrollment model
+                        FingerPosition = fp.Key,
+                        Base64Image = fp.Value!
+                    });
+                }
+            }
+
+            return Ok(new
+            {
+                message = $"Biometrics locked for Person {enrollment.PersonId} and enqueued for AFIS processing.",
+                enrollmentId = enrollment.Id
             });
         }
     }

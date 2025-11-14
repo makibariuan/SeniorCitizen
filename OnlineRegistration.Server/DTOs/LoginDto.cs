@@ -13,6 +13,14 @@ namespace OnlineRegistration.Server.DTOs
         //public bool ActiveToken { get; set; } = false;
     }
 
+    //public class LoginResponse
+    //{
+    //    public string Token { get; set; } = string.Empty;
+    //    public string Role { get; set; } = string.Empty;
+    //    public string UserId { get; set; } = string.Empty;
+    //    public bool MustResetPassword { get; set; }
+    //}
+
     public class ForgotPasswordDto
     {
         public string Email { get; set; } = string.Empty;

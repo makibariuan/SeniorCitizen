@@ -60,17 +60,17 @@ namespace OnlineRegistration.Server.Data
             modelBuilder.Entity<Employee>().HasKey(p => p.PersonID);
 
             modelBuilder.Entity<BiometricDevice>().HasKey(p => p.BiometricDeviceID);
-            modelBuilder.Entity<EmployeeAttendance>().HasKey(p => new {p.EmployeeID,p.BiometricDeviceID,p.DateLog});
+            modelBuilder.Entity<EmployeeAttendance>().HasKey(p => new { p.EmployeeID, p.BiometricDeviceID, p.DateLog });
 
             // Relationships
             modelBuilder.Entity<EmployeeAttendance>()
                 .HasOne(a => a.BiometricDevice)
                 .WithMany()
                 .HasForeignKey(a => a.BiometricDeviceID);
-            modelBuilder.Entity<BiometricDevice>()
-                .HasOne(d => d.Department)
-                .WithMany()
-                .HasForeignKey(d => d.DepartmenID);
+            //modelBuilder.Entity<BiometricDevice>()
+            //    .HasOne(d => d.Department)
+            //    .WithMany()
+            //    .HasForeignKey(d => d.DepartmenID);
 
             modelBuilder.Entity<PersonalInformation>()
                 .HasMany(p => p.Children)

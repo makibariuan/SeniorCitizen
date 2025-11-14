@@ -36,12 +36,10 @@
   // 🧩 Menu configuration per user type
   const allMenus = {
     1: [ // Super Admin
-      { name: "Manage Kit Users", path: "/manage-kit-users" },
-      { name: "Manage System Users", path: "/manage-system-users" },
-      { name: "Manage Citizens", path: "/manage-citizens" },
+      { name: "Back", action: () => router.back()}
     ],
     2: [ // System Admin
-      { name: "Manage Citizens", path: "/manage-citizens" },
+      { name: "Back", action: () => router.back()}
     ],
   };
 

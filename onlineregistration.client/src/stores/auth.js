@@ -21,9 +21,10 @@ export const useAuthStore = defineStore("auth", {
           email: payload.email || "",
           firstName: payload.firstname || "",
           lastName: payload.lastname || "",
-          birthdate: payload.birthdate || "",
-          employeeID: payload.employeeID || "",
+          //birthdate: payload.birthdate || "",
+          //employeeID: payload.employeeID || "",
           userType: payload.usertype || "",
+          userRole: payload.userrole || "",
         };
       } catch {
         return null;
@@ -39,12 +40,12 @@ export const useAuthStore = defineStore("auth", {
     email() {
       return this.user?.email || "";
     },
-    birthdate() {
-      return this.user?.birthdate || "";
-    },
-    employeeID() {
-      return this.user?.employeeID || "";
-    },
+    //birthdate() {
+    //  return this.user?.birthdate || "";
+    //},
+    //employeeID() {
+    //  return this.user?.employeeID || "";
+    //},
     firstName() {
       return this.user?.firstName || "";
     },
@@ -53,6 +54,9 @@ export const useAuthStore = defineStore("auth", {
     },
     userType() {
       return this.user?.userType || "";
+    },
+    userRole() {
+      return this.user?.userRole || "";
     },
   },
 

@@ -1,65 +1,81 @@
 <template>
-  <LeftMenu @navigate="onNavigate" class="leftMenu" />
+  <!--<LeftMenu @navigate="onNavigate" class="leftMenu" />-->
   <Header class="header" />
 
-  <div class="dashboard-content">
-    <h1 class="welcome-title">Administrator Dashboard 🛡️</h1>
-    <p class="role-info">
-      Welcome back, {{ username }}. Use the sections below to manage users and citizen data.
-    </p>
-
-    <section class="summary-grid">
-      <router-link to="/manage-kit-users" class="summary-card kit-user-card">
-        <div class="card-content">
-          <p class="card-label">Kit Users</p>
-          <p class="metric-number">{{ statisticsData.kitUserCount || 0 }}</p>
-          <p class="card-detail">Manage Field Enrollment Personnel</p>
-        </div>
-        <i class="fas fa-users-cog card-icon"></i>
-      </router-link>
-
-      <router-link to="/manage-system-users" class="summary-card system-user-card">
-        <div class="card-content">
-          <p class="card-label">System Users</p>
-          <p class="metric-number">{{ statisticsData.systemUserCount || 0 }}</p>
-          <p class="card-detail">Manage Dashboard Administrators</p>
-        </div>
-        <i class="fas fa-user-shield card-icon"></i>
-      </router-link>
-
-      <router-link to="/manage-citizens" class="summary-card citizen-card">
-        <div class="card-content">
-          <p class="card-label">Citizens Created</p>
-          <p class="metric-number">{{ statisticsData.citizenCount || 0 }}</p>
-          <p class="card-detail">View and Manage All Senior Citizen Records</p>
-        </div>
-        <i class="fas fa-address-card card-icon"></i>
-      </router-link>
-    </section>
-    <div v-if="loading" class="loading-overlay">
-      <p>Loading data...</p>
-      <p>If this persists, check network or authorization.</p>
+  <!--Display the contents here-->
+  <div class="action-bar">
+    <div class="search-group">
+      <input type="text" v-model="searchTerm" placeholder="Search by username or ID..." class="search-input" />
+      <i class="fas fa-search search-icon"></i>
     </div>
-
-    <div v-if="error" class="error-box">
-      <p>{{ error }}</p>
-    </div>
-
-    <DialogBox :show="showDialog"
-               :title="dialogTitle"
-               :message="dialogMessage"
-               @close="showDialog = false" />
-
-    <LoadingDialog :visible="isLoading" />
+    <button class="add-btn" @click="openAddForm">+ Add New Kit User</button>
   </div>
+
+  <!-- USER DATA TABLE -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <!--<th>Last Login</th>-->
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <!-- Assumes users is filtered by searchTerm in computed property -->
+      <tbody>
+        <tr v-for="user in users" :key="user.id">
+          <td>{{ user.id }}</td>
+          <td>{{ user.username }}</td>
+          <!--<td>{{ user.lastLoginDate || 'N/A' }}</td>-->
+          <td>
+            <span :class="{'status-active': user.status, 'status-inactive': !user.status}">
+              {{ user.status ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="action-cell">
+            <button class="action-btn edit-btn" @click="editUser(user)">Edit</button>
+            <button class="action-btn status-btn" @click="toggleUserStatus(user)">
+              {{ user.status ? 'Deactivate' : 'Activate' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+      <!--<tfoot v-if="users.value.length">
+        <tr>
+          <td colspan="6" class="text-center p-4 text-gray-600">No Kit Users found.</td>
+        </tr>
+      </tfoot>-->
+    </table>
+  </div>
+
+  <div v-if="showConfirmation" class="form-overlay" @click.self="handleConfirmation(false)">
+    <div class="form-popup">
+      <h3>Confirm Action</h3>
+      <p>{{ confirmationMessage }}</p>
+      <div class="form-actions">
+        <button class="cancel-btn" @click="handleConfirmation(false)">Cancel</button>
+        <button class="save-btn" @click="handleConfirmation(true)">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success/Error Dialog -->
+  <DialogBox :show="showDialog" :title="dialogTitle" :message="dialogMessage" @close="showDialog = false" />
+
+  <!-- Loading Dialog (always on top of everything) -->
+  <LoadingDialog :visible="isLoading" />
+
 </template>
 
 <script setup>
   import { ref, onMounted, computed } from "vue";
-  import LeftMenu from "./LeftMenuHR.vue";
-  import Header from "./Header.vue";
   import { useAuthStore } from "@/stores/auth";
+
   import api from "@/api";
+  import LeftMenu from "./LeftMenuBack.vue";
+  import Header from "./Header.vue";
   import DialogBox from "@/components/DialogBox.vue";
   import LoadingDialog from "./LoadingDialog.vue";
 
@@ -68,13 +84,16 @@
   const dialogTitle = ref("");
   const dialogMessage = ref("");
   const isLoading = ref(false);
+  const showConfirmation = ref(false);
+  const confirmationMessage = ref("");
+  const confirmationAction = ref("");
 
   // --- Auth store & user data ---
   const auth = useAuthStore();
   const firstname = computed(() => auth.firstName ?? "User");
   const username = computed(() => auth.username ?? "User");
   const userType = computed(() => Number(auth.userType ?? 1));
-  const statisticsData = ref([]);
+  const users = ref([]);
 
   // --- Navigation state ---
   const current = ref("admin");
@@ -87,109 +106,98 @@
     if (typeof auth.loadUser === "function") {
       await auth.loadUser();
     }
-    // TODO: fetch the summary
-    loadStats();
+    LoadSystemUsers();
   });
 
-  async function loadStats() {
+  async function LoadSystemUsers() {
     try {
       isLoading.value = true;
-      const res = await api.get(`/admin/statistics`);
-      statisticsData.value = res.data;
+      const res = await api.get("/admin/user-list/system"); // <-- change the api url
+      users.value = res.data;
     } catch (err) {
-      console.error("Failed to load data:", err);
+      console.error("AxiosError:", err);
+      if (err.response) {
+        console.error("Status:", err.response.status);
+        console.error("Data:", err.response.data);
+      } else if (err.request) {
+        console.error("No response received from server", err.request);
+      } else {
+        console.error("Axios setup error:", err.message);
+      }
+      // Log out the user on error
+      if (typeof auth.logout === "function") {
+        auth.logout(); // this should clear user data and redirect to login
+      } else {
+        showDialog.value = true;
+        dialogTitle.value = "Error";
+        dialogMessage.value = "Failed to load dashboard stats. Please log in again.";
+      }
     } finally {
-      isLoading.value = false;  // hide hourglass
+      isLoading.value = false;
     }
   }
+
+  function toggleUserStatus(user) {
+    const newStatus = !user.status;
+    const action = newStatus ? 'Activate' : 'Deactivate';
+
+    this.openConfirmation(
+      `Are you sure you want to ${action} user ${user.username}?`,
+      () => this.executeToggleUserStatus(user, action)
+    );
+  }
+
+  async function openConfirmation(message, action) {
+    this.confirmationMessage = message;
+    this.confirmationAction = action;
+    this.showConfirmation = true;
+  }
+
+  async function handleConfirmation(confirmed) {
+    this.showConfirmation = false;
+    if (confirmed && typeof this.confirmationAction === 'function') {
+      this.confirmationAction();
+    }
+    this.confirmationAction = null;
+  }
+
+  async function executeToggleUserStatus(user, action) {
+    // verify the user to deactivate
+    if (username.value == user.username) {
+      showDialog.value = true;
+      dialogTitle.value = "Error";
+      dialogMessage.value = "You cannot deactivate your own account.";
+      return;
+    }
+
+
+    try {
+      isLoading.value = true;
+      const res = await api.post("/admin/toggle-status", {
+        UserId: user.id,
+      }); // <-- change the api url
+
+      users.value = res.data;
+    } catch (err) {
+      console.error("AxiosError:", err);
+      if (err.response) {
+        console.error("Status:", err.response.status);
+        console.error("Data:", err.response.data);
+      } else if (err.request) {
+        console.error("No response received from server", err.request);
+      } else {
+        console.error("Axios setup error:", err.message);
+      }
+      showDialog.value = true;
+      dialogTitle.value = "Error";
+      dialogMessage.value = "Failed to load dashboard stats. Please log in again.";
+    } finally {
+      isLoading.value = false;
+      LoadSystemUsers();
+    }
+  }
+
 </script>
-
-<!--<style>
-  .layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background: #f2f5fa;
-    width: 76vw;
-    position: fixed;
-    top: 0;
-    right: 0;
-  }
-
-  .content {
-    flex: 1;
-    padding: 20px;
-    box-sizing: border-box;
-    transform: translateY(-8vh);
-    text-align: center;
-  }
-
-  .leftMenu {
-    grid-row: span 5 / span 5;
-  }
-
-  .header {
-    grid-column: span 4 / span 4;
-  }
-
-  h2 {
-    font-size: 2rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: black;
-  }
-
-  img {
-    width: 10vw;
-    height: auto;
-  }
-
-  /* Status cards */
-  .status-container {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 40px;
-    flex-wrap: wrap;
-  }
-
-  .status-card {
-    background: white;
-    padding: 20px 30px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    min-width: 180px;
-    transition: transform 0.2s;
-    cursor: default;
-  }
-
-    .status-card:hover {
-      transform: translateY(-4px);
-    }
-
-  .status-icon {
-    font-size: 2rem;
-  }
-
-  .status-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .status-number {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #2c3e50;
-  }
-
-  .status-label {
-    font-size: 0.9rem;
-    color: #555;
-  }
-</style>-->
 
 <style scoped>
   /* Styles remain unchanged */
@@ -445,3 +453,5 @@
       background-color: #4caf50;
     }
 </style>
+
+

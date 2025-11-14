@@ -32,33 +32,29 @@ namespace OnlineRegistration.Server.Controllers
         [HttpGet("citizen-list")]
         public async Task<ActionResult<IEnumerable<CitizenReadDto>>> GetCitizens()
         {
+            // This query is optimized and relies heavily on correct FK mapping in the model.
             var citizens = await _context.Citizens
                 .OrderByDescending(c => c.CreatedAt)
-                .Select(c => new CitizenReadDto
+                .Select(c => new
                 {
-                    Id = c.Id,
-                    CitizenType = c.CitizenType,
-                    FirstName = c.FirstName,
-                    LastName = c.LastName,
-                    BirthDate = c.BirthDate,
-                    CreatedAt = c.CreatedAt,
-                    BiometricBypass = c.BiometricBypass,
-
-                    // Select latest biometric metadata using EF Core in-memory sorting
-                    BiometricId = c.BiometricEnrollments
+                    Citizen = c,
+                    LatestBiometric = c.BiometricEnrollments
                         .OrderByDescending(b => b.DateUpload)
-                        .Select(b => (int?)b.Id)
-                        .FirstOrDefault(),
-
-                    DateCapture = c.BiometricEnrollments
-                        .OrderByDescending(b => b.DateUpload)
-                        .Select(b => (DateTime?)b.DateCapture)
-                        .FirstOrDefault(),
-
-                    Status = c.BiometricEnrollments
-                        .OrderByDescending(b => b.DateUpload)
-                        .Select(b => (int?)b.Status)
                         .FirstOrDefault()
+                })
+                .Select(x => new CitizenReadDto
+                {
+                    Id = x.Citizen.Id,
+                    CitizenType = x.Citizen.CitizenType,
+                    FirstName = x.Citizen.FirstName,
+                    LastName = x.Citizen.LastName,
+                    BirthDate = x.Citizen.BirthDate,
+                    CreatedAt = x.Citizen.CreatedAt,
+                    BiometricBypass = x.Citizen.BiometricBypass,
+
+                    BiometricId = x.LatestBiometric == null ? (int?)null : x.LatestBiometric.Id,
+                    DateCapture = x.LatestBiometric == null ? (DateTime?)null : x.LatestBiometric.DateCapture,
+                    Status = x.LatestBiometric == null ? (int?)null : x.LatestBiometric.Status
                 })
                 .ToListAsync();
 
@@ -77,6 +73,7 @@ namespace OnlineRegistration.Server.Controllers
             {
                 return NotFound(new { message = "Citizen not found." });
             }
+
             var detailDto = new CitizenDetailDto
             {
                 Id = citizen.Id,
@@ -90,12 +87,16 @@ namespace OnlineRegistration.Server.Controllers
                     .Select(b => new BiometricReadDto
                     {
                         Id = b.Id,
+                        // FIX: Map nullable types directly (b.DateCapture is DateTime? in the model)
                         DateCapture = b.DateCapture ?? DateTime.MinValue,
                         DateUpload = b.DateUpload ?? DateTime.MinValue,
-                        DateActivate = b.DateActivate,
-                        Status = b.Status,
+                        //DateActivate = b.DateActivate,
+                        // Status, Hit, KitUser, KitName added based on prior model fixes
+                        Status = b.Status, // BiometricReadDto has Status as non-nullable int
+                        Hit = b.Hit, // Assuming BiometricReadDto maps Hit as non-nullable int
+                        KitUser = b.KitUser,
+                        KitName = b.KitName,
 
-                        // Map all biometric fields
                         Photo = b.Photo,
                         Signature = b.Signature,
                         LeftThumb = b.LeftThumb,
@@ -113,11 +114,10 @@ namespace OnlineRegistration.Server.Controllers
                         BiometricLeft = b.BiometricLeft,
                         BiometricRight = b.BiometricRight
                     })
-                    .OrderByDescending(b => b.DateCapture)
+                    .OrderByDescending(b => b.DateUpload)
                     .ToList()
             };
 
-            // 4. Return the DTO
             return Ok(detailDto);
         }
 
@@ -154,7 +154,7 @@ namespace OnlineRegistration.Server.Controllers
                 PersonId = citizen.Id,
                 DateCapture = DateTime.UtcNow,
                 DateUpload = DateTime.UtcNow,
-                DateActivate = null,
+                //DateActivate = null,
 
                 // --- MAPPING BIOMETRIC FIELDS ---
                 Photo = dto.Biometrics.Photo,
@@ -190,61 +190,61 @@ namespace OnlineRegistration.Server.Controllers
         }
 
         // --- PUT: Update Citizen Personal Details and optionally add a new Biometric Enrollment ---
-        [HttpPut("update-citizen/{id}")]
-        public async Task<IActionResult> UpdateCitizen(int id, [FromBody] CitizenCreateDto dto)
-        {
-            var citizen = await _context.Citizens
-                .Include(c => c.BiometricEnrollments)
-                .FirstOrDefaultAsync(c => c.Id == id);
+        //[HttpPut("update-citizen/{id}")]
+        //public async Task<IActionResult> UpdateCitizen(int id, [FromBody] CitizenCreateDto dto)
+        //{
+        //    var citizen = await _context.Citizens
+        //        .Include(c => c.BiometricEnrollments)
+        //        .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (citizen == null)
-            {
-                return NotFound(new { message = "Citizen not found." });
-            }
+        //    if (citizen == null)
+        //    {
+        //        return NotFound(new { message = "Citizen not found." });
+        //    }
 
-            // --- Update Personal Details ---
-            citizen.CitizenType = dto.CitizenType;
-            citizen.FirstName = dto.FirstName;
-            citizen.LastName = dto.LastName;
-            citizen.BirthDate = dto.BirthDate;
+        //    // --- Update Personal Details ---
+        //    citizen.CitizenType = dto.CitizenType;
+        //    citizen.FirstName = dto.FirstName;
+        //    citizen.LastName = dto.LastName;
+        //    citizen.BirthDate = dto.BirthDate;
 
-            // Optional: If the PUT request includes new biometric data, create a new enrollment record
-            if (dto.Biometrics != null)
-            {
-                var newBiometric = new BiometricDataEnrollment
-                {
-                    PersonId = citizen.Id,
-                    DateCapture = DateTime.UtcNow,
-                    DateUpload = DateTime.UtcNow,
-                    DateActivate = null,
+        //    // Optional: If the PUT request includes new biometric data, create a new enrollment record
+        //    if (dto.Biometrics != null)
+        //    {
+        //        var newBiometric = new BiometricDataEnrollment
+        //        {
+        //            PersonId = citizen.Id,
+        //            DateCapture = DateTime.UtcNow,
+        //            DateUpload = DateTime.UtcNow,
+        //            //DateActivate = null,
 
-                    // --- MAPPING BIOMETRIC FIELDS ---
-                    Photo = dto.Biometrics.Photo,
-                    Signature = dto.Biometrics.Signature,
-                    LeftThumb = dto.Biometrics.LeftThumb,
-                    LeftIndex = dto.Biometrics.LeftIndex,
-                    LeftMiddle = dto.Biometrics.LeftMiddle,
-                    LeftRing = dto.Biometrics.LeftRing,
-                    LeftSmall = dto.Biometrics.LeftSmall,
-                    RightThumb = dto.Biometrics.RightThumb,
-                    RightIndex = dto.Biometrics.RightIndex,
-                    RightMiddle = dto.Biometrics.RightMiddle,
-                    RightRing = dto.Biometrics.RightRing,
-                    RightSmall = dto.Biometrics.RightSmall,
-                    EyeLeft = dto.Biometrics.EyeLeft,
-                    EyeRight = dto.Biometrics.EyeRight,
-                    BiometricLeft = dto.Biometrics.BiometricLeft,
-                    BiometricRight = dto.Biometrics.BiometricRight,
+        //            // --- MAPPING BIOMETRIC FIELDS ---
+        //            Photo = dto.Biometrics.Photo,
+        //            Signature = dto.Biometrics.Signature,
+        //            LeftThumb = dto.Biometrics.LeftThumb,
+        //            LeftIndex = dto.Biometrics.LeftIndex,
+        //            LeftMiddle = dto.Biometrics.LeftMiddle,
+        //            LeftRing = dto.Biometrics.LeftRing,
+        //            LeftSmall = dto.Biometrics.LeftSmall,
+        //            RightThumb = dto.Biometrics.RightThumb,
+        //            RightIndex = dto.Biometrics.RightIndex,
+        //            RightMiddle = dto.Biometrics.RightMiddle,
+        //            RightRing = dto.Biometrics.RightRing,
+        //            RightSmall = dto.Biometrics.RightSmall,
+        //            EyeLeft = dto.Biometrics.EyeLeft,
+        //            EyeRight = dto.Biometrics.EyeRight,
+        //            BiometricLeft = dto.Biometrics.BiometricLeft,
+        //            BiometricRight = dto.Biometrics.BiometricRight,
 
-                    Hit = 0, // Default value
-                    Status = dto.Biometrics.Status ?? 1 // Default status to 1 if null
-                };
-                _context.BiometricEnrollments.Add(newBiometric);
-            }
+        //            Hit = 0, // Default value
+        //            Status = dto.Biometrics.Status ?? 1 // Default status to 1 if null
+        //        };
+        //        _context.BiometricEnrollments.Add(newBiometric);
+        //    }
 
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
+        //    await _context.SaveChangesAsync();
+        //    return NoContent();
+        //}
 
         [HttpPut("set-bypass-status/{id}")]
         public async Task<IActionResult> SetBiometricBypassStatusAndLog(int id, [FromBody] BypassLogDto dto)
@@ -275,7 +275,7 @@ namespace OnlineRegistration.Server.Controllers
                 // Create the log entry
                 var bypassLog = new BypassLog
                 {
-                    PersonId = citizen.Id,
+                    //PersonId = citizen.Id,
                     StepName = dto.StepName ?? "Step Name",
                     ReasonCode = dto.ReasonCode,
                     ReasonDetails = dto.ReasonDetails,

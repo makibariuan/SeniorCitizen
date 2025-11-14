@@ -5,11 +5,12 @@ namespace OnlineRegistration.Server.DTOs
     public class BiometricDataEnrollmentDto
     {
             public int Id { get; set; }
+
             [Required]
             public int PersonId { get; set; }
             public DateTime DateCapture { get; set; }
             public DateTime DateUpload { get; set; }
-            public DateTime? DateActivate { get; set; }
+           // public DateTime? DateActivate { get; set; }
             public int Status { get; set; } // Note: Status is non-nullable in this output DTO
 
             public string? Photo { get; set; }
@@ -29,6 +30,8 @@ namespace OnlineRegistration.Server.DTOs
             public string? BiometricLeft { get; set; }
             public string? BiometricRight { get; set; }
 
-        //-----------------------------------------------------------------kulang
-    }
+            public int? Hit { get; set; }
+            public string? KitUser { get; set; }
+            public string? KitName { get; set; }
+        }
 }

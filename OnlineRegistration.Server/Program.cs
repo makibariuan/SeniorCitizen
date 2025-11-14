@@ -9,6 +9,7 @@ using OnlineRegistration.Server.Data;
 using OnlineRegistration.Server.Models;
 using OnlineRegistration.Server.Services;
 using OnlineRegistration.Server.Services.Interfaces;
+using SixLabors.ImageSharp;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Mail;
@@ -65,6 +66,7 @@ builder.Services.AddHostedService<EmailSender>();
 
 // For password hashing
 builder.Services.AddScoped<IPasswordHasher<UsersEmployee>, PasswordHasher<UsersEmployee>>();
+
 
 // AFIS queue
 builder.Services.AddSingleton<AfisQueueService>(); // Service shared with controller

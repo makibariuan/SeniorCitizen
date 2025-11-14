@@ -254,7 +254,7 @@ namespace OnlineRegistration.Server.Models
         public DateTime? DateSchedule {  get; set; }
         public DateTime? DateCapture { get; set; }
         public DateTime? DateUpload { get; set; }
-        public DateTime? DateActivate { get; set; }
+        //public DateTime? DateActivate { get; set; }
         public string? Photo { get; set; }
         public string? Signature { get; set; }
         public string? LeftThumb { get; set; }

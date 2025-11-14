@@ -18,7 +18,11 @@ namespace OnlineRegistration.Server.DTOs
         public int UserType { get; set; } 
         [Required, MaxLength(100)]
         public string Username { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
         public int UserRole { get; set; }
+
+
     }
 
     // DTO for returning System User data
@@ -27,9 +31,12 @@ namespace OnlineRegistration.Server.DTOs
         public int Id { get; set; }
         public int UserType { get; set; }
         public string Username { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
         public bool Status { get; set; }
         public int UserRole { get; set; }
-        public string RoleDesc { get; set; } = string.Empty; 
+        public string RoleDesc { get; set; } = string.Empty;
+
     }
 
     // DTO for returning Kit User data

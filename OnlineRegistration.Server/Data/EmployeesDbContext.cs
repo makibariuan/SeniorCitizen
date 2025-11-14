@@ -67,10 +67,10 @@ namespace OnlineRegistration.Server.Data
                 .HasOne(a => a.BiometricDevice)
                 .WithMany()
                 .HasForeignKey(a => a.BiometricDeviceID);
-            modelBuilder.Entity<BiometricDevice>()
-                .HasOne(d => d.Department)
-                .WithMany()
-                .HasForeignKey(d => d.DepartmenID);
+            //modelBuilder.Entity<BiometricDevice>()
+            //    .HasOne(d => d.Department)
+            //    .WithMany()
+            //    .HasForeignKey(d => d.DepartmenID);
 
             modelBuilder.Entity<PersonalInformation>()
                 .HasMany(p => p.Children)

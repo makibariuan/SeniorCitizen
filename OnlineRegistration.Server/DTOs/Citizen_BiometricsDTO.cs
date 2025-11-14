@@ -25,7 +25,10 @@ namespace OnlineRegistration.Server.DTOs
         public string? BiometricLeft { get; set; }
         public string? BiometricRight { get; set; }
         public int? Status { get; set; }
-        
+        public int? Hit { get; set; } 
+        public string? KitUser { get; set; } 
+        public string? KitName { get; set; }
+
     }
 
     // --- Biometric Data DTO (Read/Output) ---
@@ -35,7 +38,7 @@ namespace OnlineRegistration.Server.DTOs
         public int Id { get; set; }
         public DateTime DateCapture { get; set; }
         public DateTime DateUpload { get; set; }
-        public DateTime? DateActivate { get; set; }
+        //public DateTime? DateActivate { get; set; }
         public int Status { get; set; } // Note: Status is non-nullable in this output DTO
 
         public string? Photo { get; set; }
@@ -55,7 +58,11 @@ namespace OnlineRegistration.Server.DTOs
         public string? BiometricLeft { get; set; }
         public string? BiometricRight { get; set; }
 
-        
+        public int Hit { get; set; } 
+        public string? KitUser { get; set; } 
+        public string? KitName { get; set; }
+
+
     }
 
     // --- Combined Citizen + Biometric DTO (Create/Update Input) ---
@@ -73,7 +80,6 @@ namespace OnlineRegistration.Server.DTOs
         [Required]
         public DateTime BirthDate { get; set; }
 
-        // Biometrics is required for creation, optional for simple citizen updates
         public BiometricEnrollmentDto? Biometrics { get; set; } = new BiometricEnrollmentDto();
     }
 

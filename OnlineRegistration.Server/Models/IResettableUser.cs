@@ -7,5 +7,8 @@
         string Username { get; set; } // Needed for context/lookup
         string PasswordHash { get; set; }
         bool MustResetPassword { get; set; }
+
+        string? PasswordResetToken { get; set; }
+        DateTime? PasswordResetTokenExpiry { get; set; }
     }
 }

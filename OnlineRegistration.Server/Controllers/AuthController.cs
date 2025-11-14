@@ -284,12 +284,60 @@ namespace OnlineRegistration.Server.Controllers
             });
 
             return Ok(new { message = "If this email is registered, a reset link has been sent." });
+
+        }
+
+        [HttpPost("reset-auth-password")]
+        public async Task<IActionResult> ResetUserPassword([FromBody] ResetAuthPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // --- Token Validation: CRITICAL SECURITY STEP ---
+            // The request.ResetToken must match the stored PasswordResetToken (which is the temp password).
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u =>
+                    u.Username.ToLower() == request.Username.ToLower() &&
+                    u.PasswordResetToken == request.ResetToken && // Check if the plain-text password/token matches
+                    u.PasswordResetTokenExpiry.HasValue &&
+                    u.PasswordResetTokenExpiry.Value > DateTime.UtcNow // Check expiration
+                );
+
+            if (user == null)
+            {
+                // Generic failure message for security
+                return Unauthorized(new { message = "Password reset failed. Invalid token or user." });
+            }
+
+            // 2. Token valid. Process the password change using the user's desired NewPassword.
+            var result = await ProcessPasswordReset(user, request.NewPassword);
+
+            // 3. Clear the token fields after successful use.
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiry = null;
+            await _context.SaveChangesAsync();
+
+            return result;
+        }
+
+        // 4. Processing Method: Hashes the user's desired password and updates the user.
+        private async Task<IActionResult> ProcessPasswordReset<T>(T user, string newPassword)
+            where T : class, IResettableUser
+        {
+            // Hash the new desired password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            user.MustResetPassword = false;
+
+            // Note: DbContext save is handled in the controller method above.
+            return Ok(new { message = $"Password for user '{user.Username}' successfully set." });
         }
 
         //[HttpPost("reset-password")]
         //public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
         //{
-        //    var user = await _db.Users.FirstOrDefaultAsync(u =>
+        //    var user = await _context.Users.FirstOrDefaultAsync(u =>
         //        u.Email == dto.Email && u.PasswordResetToken == dto.Token);
 
         //    if (user == null)
@@ -302,7 +350,7 @@ namespace OnlineRegistration.Server.Controllers
         //    user.PasswordResetToken = null;
         //    user.PasswordResetTokenExpiry = null;
 
-        //    await _db.SaveChangesAsync();
+        //    await _context.SaveChangesAsync();
 
         //    return Ok(new { message = "Password has been reset successfully." });
         //}

@@ -65,6 +65,8 @@ namespace OnlineRegistration.Server.Controllers
                     Id = u.Id,
                     UserType = u.UserType,
                     Username = u.Username,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
                     Status = u.IsActive,
                     UserRole = u.UserRole,
                     RoleDesc = u.Role != null ? u.Role.RoleDesc : "N/A"
@@ -107,6 +109,8 @@ namespace OnlineRegistration.Server.Controllers
                 Username = dto.Username,
                 PasswordHash = hashedPassword,
                 IsActive = true,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
                 MustResetPassword = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -131,9 +135,9 @@ namespace OnlineRegistration.Server.Controllers
             });
         }
 
-
+        //admin
         [HttpPost("reset-user-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        public async Task<IActionResult> ResetUserPassword([FromBody] ResetUserPasswordRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -144,10 +148,8 @@ namespace OnlineRegistration.Server.Controllers
 
             if (user != null)
             {
-
                 return await ProcessPasswordChange(user);
             }
-
 
             return Unauthorized(new { message = "Invalid credentials." });
         }
@@ -155,18 +157,28 @@ namespace OnlineRegistration.Server.Controllers
 
         private async Task<IActionResult> ProcessPasswordChange<T>(T user) where T : class, IResettableUser
         {
-            string newPassword = GenerateTemporaryPassword().plainPassword;
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            //if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
-            //{
-            //    return BadRequest(new { message = "Invalid current password." });
-            //}
+            var generatedPasswordData = GenerateTemporaryPassword();
+            string newPassword = generatedPasswordData.plainPassword;
+            string hashedPassword = generatedPasswordData.hashedPassword;
 
-            
+            user.PasswordHash = hashedPassword;
+            user.PasswordResetToken = newPassword;
+
+            // Set an expiry for the token/password validity
+            user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1); // Set an expiration time
+
+            // Force user to reset the password on next login
             user.MustResetPassword = true;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Password updated successfully. Please log in with your new password.", password = newPassword });
+            return Ok(new
+            {
+                message = $"Password for user '{user.Username}' has been successfully reset.",
+                //password = newPassword,
+                resetToken = newPassword,
+                userMustChangePassword = true
+            });
         }
 
 

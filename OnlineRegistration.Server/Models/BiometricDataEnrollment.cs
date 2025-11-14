@@ -56,8 +56,9 @@ namespace OnlineRegistration.Server.Models
         public int Status { get; set; }
 
         // --- AFIS Fields ---
-        //public DateTime? AFISDateProcess { get; set; }
-        //public int? AFISPersonHit { get; set; }
+        public int? AFISHit { get; set; }
+        public DateTime? AFISDateProcess { get; set; }
+        public int? AFISPersonHit { get; set; }
 
 
         // --- Kit Fields ---

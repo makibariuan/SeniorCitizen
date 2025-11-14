@@ -4,8 +4,8 @@ import { useAuthStore } from "@/stores/auth";
 import router from "@/router";
 
 const api = axios.create({
-//  baseURL: import.meta.env.VITE_API_BASE_URL,
-  baseURL: "https://npo-pssic.ddns.net/api/",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+//  baseURL: "https://npo-pssic.ddns.net/api/",
 });
 
 // Request interceptor

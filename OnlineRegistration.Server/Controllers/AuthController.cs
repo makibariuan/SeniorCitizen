@@ -47,7 +47,7 @@ namespace OnlineRegistration.Server.Controllers
 
             if (user == null || !user.IsActive)
             {
-                return Unauthorized(new { message = "Invalid credentials or account inactive." });
+                return Unauthorized(new { message = "Invalid credentials" });
             }
 
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
@@ -61,25 +61,28 @@ namespace OnlineRegistration.Server.Controllers
             {
                 return Ok(new LoginResponse
                 {
+                    Message = "reset required.",
                     Token = "",
-                    UserRole = roleName,
-                    MustResetPassword = true
+
+                    //UserRole = roleName,
+                    //MustResetPassword = true
                 });
             }
 
             //Generate the token
-            var token = GenerateJwtToken(user.Id.ToString(), user.UserType.ToString(), roleName);
+            var token = GenerateJwtToken(user);
             user.ActiveToken = token;
             await _context.SaveChangesAsync();
 
             return Ok(new LoginResponse
             {
                 Message = "Login successful.",
-                Token = token,
-                UserRole = roleName,
-                MustResetPassword = false
+                Token = token
+                //UserRole = roleName,
+                //MustResetPassword = false
             });
         }
+
 
         //private IActionResult AuthenticateUser(int userId, string storedHash, int userType, bool mustResetPassword, string providedPassword, string userSource)
         //{
@@ -112,35 +115,35 @@ namespace OnlineRegistration.Server.Controllers
         //    });
         //}
 
-        private string GenerateJwtToken(string userId, string userType, string roleName)
-        {
-            var jwtSection = _config.GetSection("Jwt");
-            var key = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
-            if (!int.TryParse(jwtSection["ExpireMinutes"], out int expiryMinutes))
-            {
-                expiryMinutes = 60; // Default to 60 minutes if parsing fails
-            }
+        //private string GenerateJwtToken(string userId, string userType, string roleName)
+        //{
+        //    var jwtSection = _config.GetSection("Jwt");
+        //    var key = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
+        //    if (!int.TryParse(jwtSection["ExpireMinutes"], out int expiryMinutes))
+        //    {
+        //        expiryMinutes = 60; // Default to 60 minutes if parsing fails
+        //    }
 
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId),
-                new Claim(ClaimTypes.Role, roleName),
-                new Claim("UserType", userType)
-            };
+        //    var claims = new[]
+        //    {
+        //        new Claim(ClaimTypes.NameIdentifier, userId),
+        //        new Claim(ClaimTypes.Role, roleName),
+        //        new Claim("UserType", userType)
+        //    };
 
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
-                Issuer = jwtSection["Issuer"],
-                Audience = jwtSection["Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+        //    var tokenDescriptor = new SecurityTokenDescriptor
+        //    {
+        //        Subject = new ClaimsIdentity(claims),
+        //        Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
+        //        Issuer = jwtSection["Issuer"],
+        //        Audience = jwtSection["Audience"],
+        //        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        //    };
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
+        //    var tokenHandler = new JwtSecurityTokenHandler();
+        //    var token = tokenHandler.CreateToken(tokenDescriptor);
+        //    return tokenHandler.WriteToken(token);
+        //}
 
         //// ---------------- REGISTER ----------------
         //[HttpPost("register")]
@@ -384,6 +387,36 @@ namespace OnlineRegistration.Server.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Logged out" });
+        }
+
+        private string GenerateJwtToken(Users user)
+        {
+            var jwtSettings = _config.GetSection("Jwt");
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // 🔑 required
+                new Claim("id", user.Id.ToString()),                      // optional, for frontend convenience
+                new Claim("username", user.Username),
+                new Claim("email", user.Email),
+                new Claim("firstname", user.FirstName),
+                new Claim("lastname", user.LastName),
+                new Claim("usertype", user.UserType.ToString()),
+                new Claim("userrole", user.UserRole.ToString()),
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpireMinutes"])),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

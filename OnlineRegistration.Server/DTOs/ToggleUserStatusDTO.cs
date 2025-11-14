@@ -8,7 +8,7 @@ namespace OnlineRegistration.Server.DTOs
         [Required]
         public int UserId { get; set; }
 
-        [Required]
-        public bool IsActive { get; set; }
+        //[Required]
+        //public bool IsActive { get; set; }
     }
 }

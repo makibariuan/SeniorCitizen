@@ -132,45 +132,41 @@ namespace OnlineRegistration.Server.Controllers
         }
 
 
-        [HttpPost("reset")]
+        [HttpPost("reset-user-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
-            var userSystem = await _context.Users
+            var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
 
-            if (userSystem != null)
+            if (user != null)
             {
-                return await ProcessPasswordChange(userSystem, request.CurrentPassword, request.NewPassword);
+
+                return await ProcessPasswordChange(user);
             }
 
-            var userKit = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
-
-            if (userKit != null)
-            {
-                return await ProcessPasswordChange(userKit, request.CurrentPassword, request.NewPassword);
-            }
 
             return Unauthorized(new { message = "Invalid credentials." });
         }
 
 
-        private async Task<IActionResult> ProcessPasswordChange<T>(T user, string currentPassword, string newPassword) where T : class, IResettableUser
+        private async Task<IActionResult> ProcessPasswordChange<T>(T user) where T : class, IResettableUser
         {
-            if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
-            {
-                return BadRequest(new { message = "Invalid current password." });
-            }
-
+            string newPassword = GenerateTemporaryPassword().plainPassword;
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            user.MustResetPassword = false;
+            //if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+            //{
+            //    return BadRequest(new { message = "Invalid current password." });
+            //}
+
+            
+            user.MustResetPassword = true;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Password updated successfully. Please log in with your new password." });
+            return Ok(new { message = "Password updated successfully. Please log in with your new password.", password = newPassword });
         }
 
 
@@ -185,8 +181,11 @@ namespace OnlineRegistration.Server.Controllers
                 return NotFound(new { message = $"User with ID {request.UserId} not found." });
             }
 
+            user.IsActive = !user.IsActive;
+            await _context.SaveChangesAsync();
+
             // Proceed to the status toggle logic using the single found user
-            return await ProcessStatusToggle(user, request.IsActive);
+            return await ProcessStatusToggle(user, user.IsActive);
         }
 
         private async Task<IActionResult> ProcessStatusToggle<T>(T user, bool isActive) where T : class, IStatusUser

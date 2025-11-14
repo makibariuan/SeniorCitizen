@@ -15,7 +15,7 @@ namespace OnlineRegistration.Server.Models
     {
         public string Message { get; set; }
         public string Token { get; set; }
-        public string UserRole { get; set; }
-        public bool MustResetPassword { get; set; }
+        //public string UserRole { get; set; }
+        //public bool MustResetPassword { get; set; }
     }
 }

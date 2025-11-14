@@ -11,13 +11,19 @@ namespace OnlineRegistration.Server.Models
         public int Id { get; set; }
 
         // Foreign Key to Citizen
+        [Required]
+        [Column("PersonId")] // Optional: Ensure column name is explicitly set
         public int PersonId { get; set; }
+
+        // Add the navigation property back to the Citizen model
+        // This is the source of the error if not correctly mapped to PersonId
+        [ForeignKey("PersonId")] // Explicitly tells EF Core that PersonId is the FK for this Citizen object
         public Citizen? Citizen { get; set; }
 
         // --- Date Fields ---
         public DateTime? DateCapture { get; set; }
         public DateTime? DateUpload { get; set; }
-        public DateTime? DateActivate { get; set; }
+        //public DateTime? DateActivate { get; set; }
 
         // --- Biometric Data Fields ---
         public string? Photo { get; set; }
@@ -48,5 +54,14 @@ namespace OnlineRegistration.Server.Models
         // --- Status Fields ---
         public int Hit { get; set; }
         public int Status { get; set; }
+
+        // --- AFIS Fields ---
+        //public DateTime? AFISDateProcess { get; set; }
+        //public int? AFISPersonHit { get; set; }
+
+
+        // --- Kit Fields ---
+        public string? KitUser { get; set; }
+        public string? KitName { get; set; }
     }
 }

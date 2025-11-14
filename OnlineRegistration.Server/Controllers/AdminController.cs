@@ -202,11 +202,11 @@ namespace OnlineRegistration.Server.Controllers
 
         private async Task<IActionResult> ProcessStatusToggle<T>(T user, bool isActive) where T : class, IStatusUser
         {
-            // Prevent locking out Super Admins (UserType 1) - Best practice security check
-            if (user is Users systemUser && systemUser.UserType == 1 && !isActive)
-            {
-                return BadRequest(new { message = $"Cannot deactivate the primary Super Admin user ('{systemUser.Username}')" });
-            }
+            //// Prevent locking out Super Admins (UserType 1) - Best practice security check
+            //if (user is Users systemUser && systemUser.UserType == 1 && !isActive)
+            //{
+            //    return BadRequest(new { message = $"Cannot deactivate the primary Super Admin user ('{systemUser.Username}')" });
+            //}
 
             user.IsActive = isActive;
             await _context.SaveChangesAsync();
@@ -219,9 +219,34 @@ namespace OnlineRegistration.Server.Controllers
                 isActive = user.IsActive
             });
         }
+        [HttpGet("statistics")]
+        [ProducesResponseType(typeof(StatisticCountDto), 200)]
+        public async Task<ActionResult<StatisticCountDto>> GetCounts()
+        {
+            // Define all tasks to run in parallel on the database.
+            // This dramatically reduces database latency compared to sequential awaiting.
+            var citizenCountTask = _context.Citizens.CountAsync();
 
+            var kitUserCountTask = _context.Users
+                .Where(user => user.UserRole == 3)
+                .CountAsync();
 
+            var systemUserCountTask = _context.Users
+                .Where(user => user.UserRole == 2)
+                .CountAsync();
 
+            // Await all tasks concurrently.
+            await Task.WhenAll(citizenCountTask, kitUserCountTask, systemUserCountTask);
 
+            var stats = new StatisticCountDto
+            {
+                CitizenCount = citizenCountTask.Result, // Access results after WhenAll completes
+                KitUserCount = kitUserCountTask.Result,
+                SystemUserCount = systemUserCountTask.Result
+            };
+
+            return Ok(stats);
+        }
     }
+
 }

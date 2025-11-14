@@ -13,6 +13,7 @@ namespace OnlineRegistration.Server.Data
         public DbSet<BiometricDataEnrollment> BiometricEnrollments { get; set; }
         public DbSet<BypassLog> BypassLogs { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<CitizenVerificationLog>VerificationLogs { get; set; }
 
 
 

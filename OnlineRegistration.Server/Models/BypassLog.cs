@@ -3,33 +3,22 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-[Table("BypassLog")]
+[Table("BypassLogs")]
 public class BypassLog
 {
-    // Assuming an auto-incrementing key for EF Core, even if not shown in DB screenshot
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
+    public int Id { get; set; } // Id (PK, int, not null) -> Correct
 
-    // Foreign Key to Citizen
-    public int? PersonId { get; set; }
-    [ForeignKey(nameof(PersonId))]
-    public Citizen? Citizen { get; set; }
+    public string BiometricDeviceID { get; set; } = string.Empty;
 
-    // StepName (nvarchar(100), null)
-    [MaxLength(100)]
-    public string? StepName { get; set; }
+    public string Username { get; set; } = string.Empty;
 
-    // ReasonCode (nvarchar(100), null) - e.g., "NO_RIGHT_FINGERS"
-    [MaxLength(100)]
-    public string? ReasonCode { get; set; }
+    public string StepName { get; set; } = string.Empty;
 
-    // ReasonDetails (nvarchar(500), null)
-    [MaxLength(500)]
-    public string? ReasonDetails { get; set; }
+    public string ReasonCode { get; set; } = string.Empty;
 
-    // DateBypassed (datetime, null)
-    public DateTime? DateBypassed { get; set; }
+    public string ReasonDetails { get; set; } = string.Empty;
 
-    //edit
+    public DateTime DateBypassed { get; set; }
 }
